@@ -95,11 +95,7 @@ public class YelpService{
                 list.Businesses!.Add(bId);
             }
 
-            list.Businesses = list.Businesses!.Where(business => business.Price != null &&
-                                                                 business.BusinessHours != null &&
-                                                                 business.BusinessHours!.IsOpenNow == false &&
-                                                                 business.Price.Length is 2 or 3 &&
-                                                                 business.ReviewCount > 500).ToList();
+            list.Businesses = list.Businesses!.Where(business => business.Price != null).ToList();
             list.Businesses.Sort();
 
 
