@@ -6,12 +6,10 @@ public static class Program{
         SetEnvironmetVariables();
 
         try {
-            var searchResult = await YelpService.GetRestaurants("NYC", ["bars","french"]);
+            var searchResult = await YelpService.GetRestaurantIds("London", ["indian"]);
 
-            foreach (var r in searchResult.Businesses!){
-                Console.WriteLine(r.Id);
-                var result = await YelpService.GetRestaurantById(r.Id!);
-                Console.WriteLine($"Business: {result.Name} {result.Id}");
+            foreach (var r in searchResult.Ids!){
+                Console.WriteLine($"Business: {r.Id}");
             }
             
         }
