@@ -4,8 +4,7 @@ public class SentimentAnalyzer{
     private readonly MLContext? _mlContext;
     private readonly PredictionEngine<SentimentData, SentimentPrediction>? _predictionEngine;
 
-    public SentimentAnalyzer()
-    {
+    public SentimentAnalyzer(){
         _mlContext = new MLContext();
 
         var dataProcessPipeline = _mlContext.Transforms.Text.FeaturizeText(outputColumnName: "Features", inputColumnName: nameof(SentimentData.SentimentText));
@@ -17,8 +16,7 @@ public class SentimentAnalyzer{
         _predictionEngine = _mlContext.Model.CreatePredictionEngine<SentimentData, SentimentPrediction>(model);
     }
 
-    public Sentiment AnalyzeSentiment(string reviewText)
-    {
+    public Sentiment AnalyzeSentiment(string reviewText){
         var sentimentData = new SentimentData { SentimentText = reviewText };
         var prediction = _predictionEngine!.Predict(sentimentData);
 

@@ -7,7 +7,7 @@ public static class YelpService{
 
         var apiKey = Environment.GetEnvironmentVariable("API_KEY");
 
-        _httpClient = new HttpClient();
+        _httpClient = new();
         _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
         //_httpClient.BaseAddress = new Uri("https://api.yelp.com/v3/");
     }
@@ -30,7 +30,7 @@ public static class YelpService{
     }
 
     public async static Task<YelpReviews> GetReviews(string? id){
-        var apiUrl = $"https://api.yelp.com/v3/businesses/{id}/reviews";
+        var apiUrl = $"https://api.yelp.com/v3/businesses/north-india-restaurant-san-francisco/reviews";
 
         var response = await _httpClient!.GetAsync(apiUrl);
         response!.EnsureSuccessStatusCode();
@@ -58,5 +58,22 @@ public static class YelpService{
         else
             throw new Exception("Restaurant not found or no results found.");
 
+    }
+
+    public static async Task<YelpBusiness> GetRestaurantById(string businessId){
+        try{
+            var apiUrl = $"https://api.yelp.com/v3/businesses/{businessId}";
+            var response = await _httpClient.GetAsync(apiUrl);
+
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+
+            var business = JsonConvert.DeserializeObject<YelpBusiness>(json);
+            return business!;
+        }
+        catch (Exception ex){
+            Console.WriteLine($"Error retrieving restaurant details: {ex.Message}");
+            throw;
+        }
     }
 }
