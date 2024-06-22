@@ -7,8 +7,8 @@ public class Business: IComparable<Business>{
     public string? Id { get; set; }
     public string? Name { get; set; }
     public string? Rating{ get; set; }
-    [JsonProperty("is_closed")]
-    public bool? IsClosed{ get; set; }
+    [JsonProperty("business_hours")]
+    public BusinessHours? BusinessHours{ get; set; }
     public string? Price{ get; set; }
     public int CompareTo(Business? other){
         if (Price!.Length == other!.Price!.Length)

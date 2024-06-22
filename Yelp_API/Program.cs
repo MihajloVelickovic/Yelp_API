@@ -4,17 +4,17 @@ public static class Program{
     public static async Task Main(string[] args) {
         
         SetEnvironmetVariables();
+        var yelpService = new YelpService();
+        var re = yelpService.GetRestaurants("London", ["indian"]);
 
-        try {
-            var searchResult = await YelpService.GetRestaurantIds("London", ["indian"]);
-            foreach (var r in searchResult.Ids!){
-                Console.WriteLine($"Business: {r.Id}");
+        await re.ForEachAsync(res => {
+            foreach (var a in res.Businesses!){
+                Console.WriteLine(a.Name);
             }
-            
-        }
-        catch(Exception ex){
-            Console.WriteLine(ex.Message);
-        }
+        });
+        
+        Console.ReadKey();
+
     }
     public static void SetEnvironmetVariables(){
         var baseDir = DirExtension.ProjectBase();
