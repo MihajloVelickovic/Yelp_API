@@ -17,4 +17,14 @@ public class Business: IComparable<Business>{
             return 1;
         return -1;
     }
+    public override string ToString()
+    {
+        return "{\n" + $"  Restaurant: {Name ?? "Unknown"}\n" +
+               $"  ID: {Id ?? "Unknown"}\n" +
+               $"  Rating: {Rating ?? "Unknown"}\n" +
+               $"  Review Count: {ReviewCount}\n" +
+               $"  Price: {Price ?? "Unknown"}\n" +
+               $"  Business Hours: {BusinessHours?.ToString() ?? "Unknown"}" +
+               "\n}";
+    }
 }

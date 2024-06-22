@@ -28,7 +28,13 @@ public class YelpService{
         }
 
         _sub = GetReqStream().Distinct().Subscribe(
-            onNext: ServeReq,
+            onNext: context =>
+            {
+                if (context != null)
+                     ServeReq(context);
+                else
+                    Console.WriteLine("The context was null");
+            },
             onError: err => Console.WriteLine(err.Message) 
         );
 
@@ -59,7 +65,7 @@ public class YelpService{
             () => {
                 foreach (var l in lista!)
                     foreach (var b in l.Businesses!)
-                        Console.WriteLine(b.Name);
+                        Console.WriteLine(b);
             }
         );
     }
@@ -88,13 +94,15 @@ public class YelpService{
                 var bId = await GetRestaurantById(id.Id!);
                 list.Businesses!.Add(bId);
             }
-            
+
             list.Businesses = list.Businesses!.Where(business => business.Price != null &&
                                                                  business.BusinessHours != null &&
-                                                                 business.BusinessHours.IsOpenNow == false &&
+                                                                 business.BusinessHours!.IsOpenNow == false &&
                                                                  business.Price.Length is 2 or 3 &&
-                                                                 business.ReviewCount > 0).ToList();
+                                                                 business.ReviewCount > 500).ToList();
             list.Businesses.Sort();
+
+
 
             return list;
         });
@@ -103,7 +111,7 @@ public class YelpService{
     public async Task<Business> GetRestaurantById(string businessId){
         try{
             var apiUrl = $"{businessId}";
-            var response = await _httpClient.GetAsync(apiUrl);
+            var response = await _httpClient!.GetAsync(apiUrl);
             response.EnsureSuccessStatusCode();
             var json = await response.Content.ReadAsStringAsync();
             var business = JsonConvert.DeserializeObject<Business>(json);
@@ -118,7 +126,7 @@ public class YelpService{
         return Observable.Create<HttpListenerContext?>(async (o) => {
             while (true){
                 try {
-                    var context = await _httpListener.GetContextAsync();
+                    var context = await _httpListener!.GetContextAsync();
                     Console.WriteLine($"Request accepted in thread ${Thread.CurrentThread.ManagedThreadId}");
                     o.OnNext(context);
                 }

@@ -5,13 +5,13 @@ public static class Program{
         
         SetEnvironmetVariables();
         var yelpService = new YelpService();
-        var re = yelpService.GetRestaurants("London", ["indian"]);
+        //var re = yelpService.GetRestaurants("London", ["indian"]);
 
-        await re.ForEachAsync(res => {
-            foreach (var a in res.Businesses!){
-                Console.WriteLine(a.Name);
-            }
-        });
+        //await re.ForEachAsync(res => {
+        //    foreach (var a in res.Businesses!){
+        //        Console.WriteLine(a.Name);
+        //    }
+        //});
         
         Console.ReadKey();
 
