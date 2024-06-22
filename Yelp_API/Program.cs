@@ -7,7 +7,6 @@ public static class Program{
 
         try {
             var searchResult = await YelpService.GetRestaurantIds("London", ["indian"]);
-
             foreach (var r in searchResult.Ids!){
                 Console.WriteLine($"Business: {r.Id}");
             }
