@@ -1,40 +1,29 @@
 ﻿namespace Yelp_API;
 
 public static class Program{
-    public async static Task Main(string[] args) {
-        string? clientId, apikey;
-
-        SetEnvironmetVariables(out clientId, out apikey);
+    public static async Task Main(string[] args) {
+        
+        SetEnvironmetVariables();
 
         try {
-            var searchResult = await YelpService.FindRestaurantId("Donnies Donuts", "Daytona Blvd Daytona Beach");
+            var searchResult = await YelpService.GetRestaurants("NYC", ["bars","french"]);
 
-            if (searchResult == null)
-                return;
-
-            foreach (var r in searchResult.Businesses){
+            foreach (var r in searchResult.Businesses!){
                 Console.WriteLine(r.Id);
-
-                var result = await YelpService.GetRestaurantById(r.Id);
-
+                var result = await YelpService.GetRestaurantById(r.Id!);
                 Console.WriteLine($"Business: {result.Name} {result.Id}");
-
             }
-            string a = "asdasd";
             
-
         }
         catch(Exception ex){
             Console.WriteLine(ex.Message);
         }
     }
-    public static void SetEnvironmetVariables(out string? clientId, out string? apiKey){
+    public static void SetEnvironmetVariables(){
         var baseDir = DirExtension.ProjectBase();
         if (baseDir != null){
             var path = Path.Combine(baseDir, ".env");
             DotEnv.Inject(path);
         }
-        clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
-        apiKey = Environment.GetEnvironmentVariable("API_KEY");
     }
 }

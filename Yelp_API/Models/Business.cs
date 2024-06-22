@@ -1,6 +1,6 @@
 ﻿namespace Yelp_API.Models;
 
-public class YelpBusiness{
+public class Business{
     [JsonProperty("review_count")]
     public int ReviewCount { get; set; }
     [JsonProperty("id")]
