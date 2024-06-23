@@ -3,9 +3,6 @@
 public static class Program{
     public static void Main(string[] args) {
 
-        int threadId = Thread.CurrentThread.ManagedThreadId;
-        Console.WriteLine($"Current Thread ID: {threadId}");
-
         SetEnvironmetVariables();
         
         var yelpService = YelpService.Instance;
