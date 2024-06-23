@@ -7,8 +7,8 @@ public class Business: IComparable<Business>{
     public string? Id { get; set; }
     public string? Name { get; set; }
     public string? Rating{ get; set; }
-    [JsonProperty("business_hours")]
-    public BusinessHours? BusinessHours{ get; set; }
+    [JsonProperty("hours")]
+    public List<BusinessHours>? BusinessHours{ get; set; }
     public string? Price{ get; set; }
     public int CompareTo(Business? other){
         if (Price!.Length == other!.Price!.Length)
@@ -24,7 +24,7 @@ public class Business: IComparable<Business>{
                $"  Rating: {Rating ?? "Unknown"}\n" +
                $"  Review Count: {ReviewCount}\n" +
                $"  Price: {Price ?? "Unknown"}\n" +
-               $"  Business Hours: {BusinessHours?.ToString() ?? "Unknown"}" +
+               $"  Business Hours: {BusinessHours![0]!.IsOpenNow?.ToString() ?? "Unknown"}" +
                "\n}";
     }
 }

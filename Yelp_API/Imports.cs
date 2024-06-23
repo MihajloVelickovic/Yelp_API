@@ -4,3 +4,6 @@ global using Yelp_API.Models;
 global using System.Reactive.Linq;
 global using Newtonsoft.Json;
 global using System.Net;
+global using System.Diagnostics;
+global using System.Reactive;
+global using System.Reactive.Concurrency;

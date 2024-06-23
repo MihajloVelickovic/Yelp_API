@@ -1,7 +1,4 @@
-﻿using System.Diagnostics;
-using System.Reactive.Concurrency;
-
-namespace Yelp_API;
+﻿namespace Yelp_API;
 
 public class YelpService{
     private static HttpClient? _httpClient;
@@ -44,28 +41,38 @@ public class YelpService{
         if (context == null)
             return;
 
+
         var response = context.Request!.Url!.Query.Remove(0, 1).Split("&");
 
         if (response.Length != 2)
             throw new Exception("Need 2 query parameters");
-        
+
+
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+
         var location = response[0].Split("=")[1];
         var categories = response[1].Split("=")[1].Split(",");
 
-        List<SearchResult> lista = new();
-        
+        SearchResult result = new();
+        result.Businesses = new();
+
         GetRestaurants(location, categories).Subscribe(
-            next => {
-                Console.WriteLine($"{location}, {categories}");
-                lista.Add(next);
+            next => {               
+                result.Businesses!.Add(next);
             },
             error => {
                 Console.WriteLine(error.Message);
             },
             () => {
-                foreach (var l in lista!)
-                    foreach (var b in l.Businesses!)
-                        Console.WriteLine(b);
+                result.Businesses.Sort();
+                stopwatch.Stop();
+                Console.WriteLine($"Found: {result.Businesses.Count} businesses");
+                Console.WriteLine($"Location: {location}");
+                Console.WriteLine($"Categories: {string.Join(",", categories)}");
+                Console.WriteLine($"Time taked: {stopwatch.Elapsed.TotalMilliseconds} ms");
+                //foreach (var b in result!.Businesses!)
+                //    Console.WriteLine(b);
             }
         );
     }
@@ -83,27 +90,29 @@ public class YelpService{
 
         return yelpReviews;
     }
-    public IObservable<SearchResult> GetRestaurants(string location, string[] categories){
+    public IObservable<Business> GetRestaurants(string location, string[] categories){
 
-        return Observable.FromAsync(async () => {
+        return Observable.Create<Business>(async (observer, cencelationToken) => {           
             var ids = await GetRestaurantIds(location, categories);
-
-            SearchResult list = new();
-            list.Businesses = new();
+          
             foreach (var id in ids.Ids!){
-                var bId = await GetRestaurantById(id.Id!);
-                list.Businesses!.Add(bId);
+                var business = await  GetRestaurantById(id.Id!);               
+                if (CheckBusinessCond(business))
+                    observer.OnNext(business);
+                
             }
-
-            list.Businesses = list.Businesses!.Where(business => business.Price != null).ToList();
-            list.Businesses.Sort();
-
-
-
-            return list;
+            observer.OnCompleted();
         });
     }
     
+    private bool CheckBusinessCond(Business business){
+        return business.Price != null &&
+               business.BusinessHours != null &&
+               business.BusinessHours[0].IsOpenNow == false &&
+               (business.Price.Length == 2 || business.Price.Length == 3) &&
+               business.ReviewCount > 100;
+    }
+
     public async Task<Business> GetRestaurantById(string businessId){
         try{
             var apiUrl = $"{businessId}";
@@ -120,10 +129,10 @@ public class YelpService{
     }
     private IObservable<HttpListenerContext?> GetReqStream(){
         return Observable.Create<HttpListenerContext?>(async (o) => {
+            Console.WriteLine($"Listening on port: {Environment.GetEnvironmentVariable("PORT")}....");
             while (true){
                 try {
                     var context = await _httpListener!.GetContextAsync();
-                    Console.WriteLine($"Request accepted in thread ${Thread.CurrentThread.ManagedThreadId}");
                     o.OnNext(context);
                 }
                 catch (HttpListenerException exc) {
