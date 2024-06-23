@@ -1,20 +1,17 @@
 ﻿namespace Yelp_API;
 
 public static class Program{
-    public static async Task Main(string[] args) {
+    public static void Main(string[] args) {
         
         SetEnvironmetVariables();
-        var yelpService = new YelpService();
-        //var re = yelpService.GetRestaurants("London", ["indian"]);
-
-        //await re.ForEachAsync(res => {
-        //    foreach (var a in res.Businesses!){
-        //        Console.WriteLine(a.Name);
-        //    }
-        //});
         
+        var yelpService = new YelpService();
+
+        yelpService.StartListen();
+
         Console.ReadKey();
 
+        Console.WriteLine("Server was shutdown by user");
     }
     public static void SetEnvironmetVariables(){
         var baseDir = DirExtension.ProjectBase();

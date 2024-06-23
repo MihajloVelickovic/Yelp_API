@@ -18,10 +18,15 @@ public class YelpService{
         _httpClient = new();
         _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
         _httpClient.BaseAddress = new Uri(baseAddr!);
-        try{
-            _httpListener.Start();
+    }
+
+    public void StartListen(){
+        try
+        {
+            _httpListener!.Start();
         }
-        catch (Exception exc){
+        catch (Exception exc)
+        {
             Console.WriteLine(exc.Message);
             Environment.Exit(-1);
         }
@@ -30,51 +35,94 @@ public class YelpService{
             onNext: context =>
             {
                 if (context != null)
-                     ServeReq(context);
+                    ServeReq(context);
                 else
                     Console.WriteLine("The context was null");
             },
-            onError: err => Console.WriteLine(err.Message) 
+            onError: err => Console.WriteLine(err.Message)
         );
-
     }
 
     public void ServeReq(HttpListenerContext? context){
         if (context == null)
             return;
-        
-        var request = context.Request!.Url!.Query.Remove(0, 1).Split("&");
-        var response = context.Response;
-        if (request.Length != 2)
-            throw new Exception("Need 2 query parameters");
 
+        HttpListenerResponse? response = null;
 
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
+        try
+        {
+            var request = context.Request!.Url!.Query.Remove(0, 1).Split("&");
+            response = context.Response;
+            if (request.Length != 2)
+                throw new Exception("Need 2 query parameters");
 
-        var location = request[0].Split("=")[1];
-        var categories = request[1].Split("=")[1].Split(",");
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
-        SearchResult result = new();
-        result.Businesses = new();
+            var locationParams = request[0].Split("=");
 
-        GetRestaurants(location, categories).Subscribe(
-            next => {               
-                result.Businesses!.Add(next);
-            },
-            error => {
-                Console.WriteLine(error.Message);
-            },
-            () => {
-                result.Businesses.Sort();
-                stopwatch.Stop();
-                Console.WriteLine($"Found: {result.Businesses.Count} businesses");
-                Console.WriteLine($"Location: {location}");
-                Console.WriteLine($"Categories: {string.Join(",", categories)}");
-                Console.WriteLine($"Time taken: {stopwatch.Elapsed.TotalMilliseconds} ms");
-                _ = SendResponse(response, result, stopwatch.Elapsed.TotalMilliseconds);
-            }
-        );
+            var categorieParams = request[1].Split("=");
+
+            if (locationParams[0] != "location")
+                throw new Exception("The first paramether must me location!");
+            if (categorieParams[0] != "categories")
+                throw new Exception("The second paramether must be categories!");
+
+            var location = locationParams[1];
+            var categories = categorieParams[1].Split(',');
+
+            if (categories.Length < 1)
+                throw new Exception("There must be at least one filter category");
+
+            SearchResult result = new();
+            result.Businesses = new();
+
+            GetRestaurants(location, categories).Subscribe(
+                next =>{
+                    result.Businesses!.Add(next);
+                },
+                error =>{
+                    Console.WriteLine(error.Message);
+                },
+                () =>{
+                    result.Businesses.Sort();
+                    stopwatch.Stop();
+                    Console.WriteLine($"Found: {result.Businesses.Count} businesses");
+                    Console.WriteLine($"Location: {location}");
+                    Console.WriteLine($"Categories: {string.Join(",", categories)}");
+                    Console.WriteLine($"Time taken: {stopwatch.Elapsed.TotalMilliseconds} ms");
+                    _ = SendResponse(response, result, stopwatch.Elapsed.TotalMilliseconds);
+                }
+            );
+        }
+        catch(Exception ex){
+            Console.WriteLine($"There was an error serving request: {ex.Message}");
+            _ = SendErrorResponse(response, ex.Message, HttpStatusCode.BadRequest);
+        }
+    }
+
+    private async Task SendErrorResponse(HttpListenerResponse? response, string message, HttpStatusCode statusCode){
+        try{
+            if (response == null)
+                throw new Exception("The response was null");
+
+            if (message == null)
+                throw new ArgumentNullException("The message was null");
+
+            var errorResponse = new{
+                StatusCode = (int)statusCode,
+                Message = message
+            };
+            var responseJson = JsonConvert.SerializeObject(errorResponse);
+            var responseByteArray = Encoding.UTF8.GetBytes(responseJson);
+            response.ContentLength64 = responseByteArray.Length;
+            response.ContentType = "application/json";
+            response.StatusCode = (int)statusCode;
+            await response.OutputStream.WriteAsync(responseByteArray);
+        }
+        catch (Exception e){
+            Console.WriteLine($"Error sending error response: {e.Message}");
+        }
     }
 
     public async Task SendResponse(HttpListenerResponse response, SearchResult result, double time){
@@ -116,7 +164,7 @@ public class YelpService{
                 }
             }
             observer.OnCompleted();
-        });
+        }).SubscribeOn(TaskPoolScheduler.Default);
     }
 
     private bool FirstCheck(Business business){
