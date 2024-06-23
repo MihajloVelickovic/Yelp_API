@@ -90,15 +90,25 @@ public class YelpService{
                 },
                 error =>{
                     Console.WriteLine(error.Message);
+                    SendErrorResponse(response, "Could not process such request. Wrong location or category",
+                        HttpStatusCode.BadRequest);
                 },
                 () =>{
-                    result.Businesses.Sort();
-                    stopwatch.Stop();
-                    Console.WriteLine($"Found: {result.Businesses.Count} businesses");
-                    Console.WriteLine($"Location: {location}");
-                    Console.WriteLine($"Categories: {string.Join(",", categories)}");
-                    Console.WriteLine($"Time taken: {stopwatch.Elapsed.TotalMilliseconds} ms");
-                    SendResponse(response, result, stopwatch.Elapsed.TotalMilliseconds);
+                    if (result.Businesses.Count > 0){
+                        result.Businesses.Sort();
+                        stopwatch.Stop();
+                        Console.WriteLine($"Found: {result.Businesses.Count} businesses");
+                        Console.WriteLine($"Location: {location}");
+                        Console.WriteLine($"Categories: {string.Join(",", categories)}");
+                        Console.WriteLine($"Time taken: {stopwatch.Elapsed.TotalMilliseconds} ms");
+                        SendResponse(response, result, stopwatch.Elapsed.TotalMilliseconds);
+                    }
+                    else{
+                        var resMessage = $"Could not find any businesses for query: {location}/{string.Join(",", categories)}";
+                        Console.WriteLine(resMessage);
+                        SendErrorResponse(response , resMessage, HttpStatusCode.NotFound);
+
+                    } 
                 }
             );
         }
@@ -159,31 +169,39 @@ public class YelpService{
     }
     public IObservable<Business> GetRestaurants(string location, string[] categories){
 
-        return Observable.Create<Business>(async (observer, cancellationToken) => {           
-            var businesses = await GetRestaurantIds(location, categories);
-          
-            foreach (var b in businesses.Businesses!){
-                if (FirstCheck(b)){
-                    var business = await GetRestaurantById(b.Id!);
-                    if (SecondCheck(business))
-                        observer.OnNext(business);
+        return Observable.Create<Business>(async (observer, cancellationToken) => {
+            try
+            {
+                var businesses = await GetRestaurantIds(location, categories);
+
+                foreach (var b in businesses.Businesses!)
+                {
+                    if (FirstCheck(b))
+                    {
+                        var business = await GetRestaurantById(b.Id!);
+                        if (SecondCheck(business))
+                            observer.OnNext(business);
+                    }
                 }
+                observer.OnCompleted();
             }
-            observer.OnCompleted();
+            catch(Exception ex){
+                observer.OnError(ex);
+            }
         }).SubscribeOn(TaskPoolScheduler.Default);
     }
 
     private bool FirstCheck(Business business){
         return business.Price != null &&
                business.Rating != null &&
-               (business.Price.Length == 2 || business.Price.Length == 3) &&
-               business.ReviewCount > 100 &&
-               Double.Parse(business.Rating) >= 4.5;
+               (business.Price.Length is 2 or 3) &&
+               business.ReviewCount > 1000 &&
+               Double.Parse(business.Rating) < 3.0;
     }
     
     private bool SecondCheck(Business business){
         return business.BusinessHours != null &&
-               business.BusinessHours[0].IsOpenNow == true;
+               business.BusinessHours[0].IsOpenNow == false;
     }
 
     public async Task<Business> GetRestaurantById(string businessId){
@@ -219,7 +237,5 @@ public class YelpService{
                 }
             }
         }).ObserveOn(TaskPoolScheduler.Default);
-    }
-
-    
+    }  
 }

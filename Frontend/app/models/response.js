@@ -52,7 +52,7 @@ export class Response{
         });
 
         const timeDiv = document.createElement("div");
-        timeDiv.classList.add("form-gr");
+        timeDiv.classList.add("time-gr");
             
         const totalTime = document.createElement("label");
         totalBusinesses.classList.add("margin-10")
