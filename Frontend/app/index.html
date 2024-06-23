@@ -3,19 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+    </style>
     <title>Yelp API</title>
 </head>
 <body>
-    <div class="row">
-        <label>Location</label>
-        <input type="text" class="loc" placeholder="Location">
+    <div class="form">
+        <div class="row">
+            <input type="text" class="loc margin-10 input-box" placeholder="Location">
+        </div>
+        <div class="row">
+            <input type="text" class="cat margin-10 input-box" placeholder="Categories">
+        </div>
+        <div class="button-row">
+            <input type="button" class="submit margin-10" value="Go!">
+        </div>
     </div>
-    <div class="row">
-        <label>Categories</label>
-        <input type="text" class="cat" placeholder="Categories">
-    </div>
-    <div class="row">
-        <input type="button" class="submit" value="Go!">
+    <div class="responses">
     </div>
     <script type="module" src="main.js"></script> 
 </body>
