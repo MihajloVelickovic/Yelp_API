@@ -1,9 +1,10 @@
+import { Business } from "./business.js"
 export class Response{
     constructor(total, businesses, totaltime){
         this.Total = total;
         this.Businesses = [];
         businesses.forEach(business => {
-            this.Businesses.push(new this.Businesses(business.Name, business.review_count, business.Rating, business.Price));
+            this.Businesses.push(new Business(business.Name, business.review_count, business.Rating, business.Price));
         });
         this.TotalTime = totaltime;
     }
