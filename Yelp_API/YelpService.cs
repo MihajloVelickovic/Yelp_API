@@ -1,4 +1,6 @@
-﻿namespace Yelp_API;
+﻿using System.Text;
+
+namespace Yelp_API;
 
 public class YelpService{
     private static HttpClient? _httpClient;
@@ -40,19 +42,18 @@ public class YelpService{
     public void ServeReq(HttpListenerContext? context){
         if (context == null)
             return;
-
-
-        var response = context.Request!.Url!.Query.Remove(0, 1).Split("&");
-
-        if (response.Length != 2)
+        
+        var request = context.Request!.Url!.Query.Remove(0, 1).Split("&");
+        var response = context.Response;
+        if (request.Length != 2)
             throw new Exception("Need 2 query parameters");
 
 
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
-        var location = response[0].Split("=")[1];
-        var categories = response[1].Split("=")[1].Split(",");
+        var location = request[0].Split("=")[1];
+        var categories = request[1].Split("=")[1].Split(",");
 
         SearchResult result = new();
         result.Businesses = new();
@@ -70,21 +71,33 @@ public class YelpService{
                 Console.WriteLine($"Found: {result.Businesses.Count} businesses");
                 Console.WriteLine($"Location: {location}");
                 Console.WriteLine($"Categories: {string.Join(",", categories)}");
-                Console.WriteLine($"Time taked: {stopwatch.Elapsed.TotalMilliseconds} ms");
-                //foreach (var b in result!.Businesses!)
-                //    Console.WriteLine(b);
+                Console.WriteLine($"Time taken: {stopwatch.Elapsed.TotalMilliseconds} ms");
+                _ = SendResponse(response, result, stopwatch.Elapsed.TotalMilliseconds);
             }
         );
     }
 
-    public async Task<SearchId> GetRestaurantIds(string location, string[] categories){
+    public async Task SendResponse(HttpListenerResponse response, SearchResult result, double time){
+        var responseObject = new{
+            businessCount = result.Businesses!.Count,
+            businesses = result.Businesses,
+            timeTaken = time,
+        };
+        var responseJson = JsonConvert.SerializeObject(responseObject);
+        var responseByteArray = Encoding.UTF8.GetBytes(responseJson);
+        response.ContentLength64 = responseByteArray.Length;
+        response.ContentType = "text/json";
+        await response.OutputStream.WriteAsync(responseByteArray);
+    }
+    
+    public async Task<SearchResult> GetRestaurantIds(string location, string[] categories){
         var apiUrl = $"search?location={location}&categories={string.Join(",", categories)}";
 
         var response = await _httpClient!.GetAsync(apiUrl);
         response!.EnsureSuccessStatusCode();
         string json = await response!.Content!.ReadAsStringAsync();
 
-        var yelpReviews = JsonConvert.DeserializeObject<SearchId>(json);
+        var yelpReviews = JsonConvert.DeserializeObject<SearchResult>(json);
         if (yelpReviews == null)
             throw new Exception("Failed to deserialize YelpReviews from JSON.");
 
@@ -92,25 +105,31 @@ public class YelpService{
     }
     public IObservable<Business> GetRestaurants(string location, string[] categories){
 
-        return Observable.Create<Business>(async (observer, cencelationToken) => {           
-            var ids = await GetRestaurantIds(location, categories);
+        return Observable.Create<Business>(async (observer, cancellationToken) => {           
+            var businesses = await GetRestaurantIds(location, categories);
           
-            foreach (var id in ids.Ids!){
-                var business = await  GetRestaurantById(id.Id!);               
-                if (CheckBusinessCond(business))
-                    observer.OnNext(business);
-                
+            foreach (var b in businesses.Businesses!){
+                if (FirstCheck(b)){
+                    var business = await GetRestaurantById(b.Id!);
+                    if (SecondCheck(business))
+                        observer.OnNext(business);
+                }
             }
             observer.OnCompleted();
         });
     }
-    
-    private bool CheckBusinessCond(Business business){
+
+    private bool FirstCheck(Business business){
         return business.Price != null &&
-               business.BusinessHours != null &&
-               business.BusinessHours[0].IsOpenNow == false &&
+               business.Rating != null &&
                (business.Price.Length == 2 || business.Price.Length == 3) &&
-               business.ReviewCount > 100;
+               business.ReviewCount > 100 &&
+               Double.Parse(business.Rating) >= 4.5;
+    }
+    
+    private bool SecondCheck(Business business){
+        return business.BusinessHours != null &&
+               business.BusinessHours[0].IsOpenNow == true;
     }
 
     public async Task<Business> GetRestaurantById(string businessId){
