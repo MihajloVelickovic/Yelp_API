@@ -5,7 +5,7 @@ public static class Program{
         
         SetEnvironmetVariables();
         
-        var yelpService = new YelpService();
+        var yelpService = YelpService.Instance;
 
         yelpService.StartListen();
 

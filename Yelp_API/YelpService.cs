@@ -6,7 +6,10 @@ public class YelpService{
     private static HttpClient? _httpClient;
     private static HttpListener? _httpListener;
     private static IDisposable? _sub;
-    
+    private static readonly Lazy<YelpService> instance = new Lazy<YelpService>(() => new YelpService());
+    public static YelpService Instance => instance.Value;
+
+
     public YelpService(){
         var apiKey = Environment.GetEnvironmentVariable("API_KEY");
         var baseAddr = Environment.GetEnvironmentVariable("BASE_ADDR");
@@ -68,8 +71,12 @@ public class YelpService{
             if (categorieParams[0] != "categories")
                 throw new Exception("The second paramether must be categories!");
 
+            
+
             var location = locationParams[1];
             var categories = categorieParams[1].Split(',');
+
+            Console.WriteLine($"Processing request for: {location}, {categorieParams[1]}");
 
             if (categories.Length < 1)
                 throw new Exception("There must be at least one filter category");
@@ -77,7 +84,7 @@ public class YelpService{
             SearchResult result = new();
             result.Businesses = new();
 
-            GetRestaurants(location, categories).Subscribe(
+            _ = GetRestaurants(location, categories).Subscribe(
                 next =>{
                     result.Businesses!.Add(next);
                 },
