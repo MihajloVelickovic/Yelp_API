@@ -98,17 +98,17 @@ public class YelpService{
                     Console.WriteLine($"Location: {location}");
                     Console.WriteLine($"Categories: {string.Join(",", categories)}");
                     Console.WriteLine($"Time taken: {stopwatch.Elapsed.TotalMilliseconds} ms");
-                    _ = SendResponse(response, result, stopwatch.Elapsed.TotalMilliseconds);
+                    SendResponse(response, result, stopwatch.Elapsed.TotalMilliseconds);
                 }
             );
         }
         catch(Exception ex){
             Console.WriteLine($"There was an error serving request: {ex.Message}");
-            _ = SendErrorResponse(response, ex.Message, HttpStatusCode.BadRequest);
+            SendErrorResponse(response, ex.Message, HttpStatusCode.BadRequest);
         }
     }
 
-    private async Task SendErrorResponse(HttpListenerResponse? response, string message, HttpStatusCode statusCode){
+    private void SendErrorResponse(HttpListenerResponse? response, string message, HttpStatusCode statusCode){
         try{
             if (response == null)
                 throw new Exception("The response was null");
@@ -125,14 +125,14 @@ public class YelpService{
             response.ContentLength64 = responseByteArray.Length;
             response.ContentType = "application/json";
             response.StatusCode = (int)statusCode;
-            await response.OutputStream.WriteAsync(responseByteArray);
+            response.OutputStream.Write(responseByteArray);
         }
         catch (Exception e){
             Console.WriteLine($"Error sending error response: {e.Message}");
         }
     }
 
-    public async Task SendResponse(HttpListenerResponse response, SearchResult result, double time){
+    public void SendResponse(HttpListenerResponse response, SearchResult result, double time){
         var responseObject = new{
             businessCount = result.Businesses!.Count,
             businesses = result.Businesses,
@@ -141,8 +141,8 @@ public class YelpService{
         var responseJson = JsonConvert.SerializeObject(responseObject);
         var responseByteArray = Encoding.UTF8.GetBytes(responseJson);
         response.ContentLength64 = responseByteArray.Length;
-        response.ContentType = "text/json";
-        await response.OutputStream.WriteAsync(responseByteArray);
+        response.ContentType = "application/json";
+        response.OutputStream.Write(responseByteArray);
     }
     
     public async Task<SearchResult> GetRestaurantIds(string location, string[] categories){
@@ -155,7 +155,6 @@ public class YelpService{
         var yelpReviews = JsonConvert.DeserializeObject<SearchResult>(json);
         if (yelpReviews == null)
             throw new Exception("Failed to deserialize YelpReviews from JSON.");
-
         return yelpReviews;
     }
     public IObservable<Business> GetRestaurants(string location, string[] categories){
